@@ -1,6 +1,41 @@
-#include <stdio.h>
-#include <stdlib.h>
 #include "data.h"
+
+int* sort_animals(int *arr, int len) {
+    // cria uma cópia da array de entrada
+    int *sorted_arr = malloc(len * sizeof(int));
+    memcpy(sorted_arr, arr, len * sizeof(int));
+
+    // ordena a array em ordem decrescente
+    for (int i = 0; i < len; i++) {
+        for (int j = i + 1; j < len; j++) {
+            if (sorted_arr[j] > sorted_arr[i]) {
+                int temp = sorted_arr[i];
+                sorted_arr[i] = sorted_arr[j];
+                sorted_arr[j] = temp;
+            }
+        }
+    }
+
+    // cria uma nova array para armazenar a posição de cada elemento na array ordenada
+    int *pos_arr = malloc(len * sizeof(int));
+    for (int i = 0; i < len; i++) {
+        pos_arr[i] = -1; // valor inicial, para identificar elementos que não foram encontrados
+    }
+
+    // preenche a nova array com as posições de cada elemento na array ordenada
+    for (int i = 0; i < len; i++) {
+        for (int j = 0; j < len; j++) {
+            if (arr[i] == sorted_arr[j] && pos_arr[j] == -1) {
+                pos_arr[j] = i;
+                break;
+            }
+        }
+    }
+
+    // libera a memória da array ordenada e retorna a nova array de posições
+    free(sorted_arr);
+    return pos_arr;
+}
 
 Animal* criar_animais(int tipo, int quantidade) {
     Animal* animais = (Animal*) malloc(quantidade * sizeof(Animal));
@@ -197,10 +232,13 @@ Zoologico* cria_zoologico(int num_leoes, int num_suricatos, int num_avestruses, 
 
     zoo->num_veterinarios = num_veterinarios;
 
+    int tempArr[] = {num_leoes, num_suricatos, num_avestruses};
+    int *pos = sort_animals(tempArr, 3);
+
     if(vet_padrao){
-        int temp[2] = {0, 2};
+        int temp[2] = {pos[0], pos[1]};
         inicializa_veterinario(&veterinarios[0], 2, temp);
-        int temp2[1] = {1};
+        int temp2[1] = {pos[2]};
         inicializa_veterinario(&veterinarios[1], 1, temp2);
     }else{
         int temp[1] = {0};
@@ -210,6 +248,8 @@ Zoologico* cria_zoologico(int num_leoes, int num_suricatos, int num_avestruses, 
         int temp3[1] = {2};
         inicializa_veterinario(&veterinarios[2], 1, temp3);
     }
+
+    free(pos);
 
     zoo->veterinarios = veterinarios;
 
