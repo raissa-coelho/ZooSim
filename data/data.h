@@ -36,14 +36,14 @@ typedef struct Fornecedor {
 } Fornecedor;
 
 typedef struct Zoologico {
-    Animal* animais;
+    Animal* animais; // Lista com os animais, dinamicamente alocada
     int num_animais;
-    Comedouro* comedouros;
+    Comedouro* comedouros; //Lista com os comedouros, dinamicamente alocada
     int num_comedouros;
-    Estoque estoque;
-    Veterinario* veterinarios;
+    Estoque* estoque;
+    Veterinario* veterinarios; //Lista com os veterinarios, dinamicamente alocada
     int num_veterinarios;
-    Fornecedor fornecedor;
+    Fornecedor* fornecedor;
 } Zoologico;
 
 #endif //ZOOSIM_DATA_H
