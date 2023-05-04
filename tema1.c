@@ -1,7 +1,4 @@
 #include <stdio.h>
-#include <pthread.h>
-#include <stdlib.h>
-#include <conio.h>
 #include "data/data.h"
 #include "print/print.h"
 
