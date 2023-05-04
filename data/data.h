@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
 
 typedef struct Animal {
     int tipo; // 1 = leão, 2 = zebra, 3 = girafa, etc.
@@ -17,6 +18,7 @@ typedef struct Comedouro {
     int tipo_alimento; // 1 = carne, 2 = vegetais, 3 = frutas, etc.
     float qtd_alimento_disp;
     float capacidade_max;
+    pthread_mutex_t mutex;
 } Comedouro;
 
 typedef struct Estoque {

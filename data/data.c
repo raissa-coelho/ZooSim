@@ -80,11 +80,15 @@ Comedouro* cria_comedouro(int quantidade) {
         return NULL;
     }
 
-    // set default values for each comedouro
     for (int i = 0; i < quantidade; i++) {
         comedouros[i].tipo_alimento = 0;
         comedouros[i].capacidade_max = 0.0f;
         comedouros[i].qtd_alimento_disp = 0.0f;
+        if (pthread_mutex_init(&comedouros[i].mutex, NULL) != 0) {
+            fprintf(stderr, "Erro: falha na inicializacao do mutex do comedouro %d\n", i);
+            free(comedouros);
+            return NULL;
+        }
     }
 
     return comedouros;
@@ -99,6 +103,10 @@ void inicializa_comedouro(Comedouro* comedouro, int tipo_alimento, float capacid
     comedouro->tipo_alimento = tipo_alimento;
     comedouro->capacidade_max = capacidade_max;
     comedouro->qtd_alimento_disp = qtd_alimento_disp;
+    if (pthread_mutex_init(&comedouro->mutex, NULL) != 0) {
+        fprintf(stderr, "Erro: falha na inicializacao do mutex do comedouro\n");
+        exit(1);
+    }
 }
 
 Estoque* inicializa_estoque(float carne_disp, float vegetais_disp, float frutas_disp) {
