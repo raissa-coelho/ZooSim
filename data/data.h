@@ -1,6 +1,10 @@
 #ifndef ZOOSIM_DATA_H
 #define ZOOSIM_DATA_H
 
+//#include "data.c"
+
+
+
 typedef struct Animal {
     int tipo; // 1 = leão, 2 = zebra, 3 = girafa, etc.
     int id;
@@ -45,5 +49,16 @@ typedef struct Zoologico {
     int num_veterinarios;
     Fornecedor* fornecedor;
 } Zoologico;
+
+Animal* criar_animais(int tipo, int quantidade);
+Comedouro* cria_comedouro(int quantidade);
+void inicializa_comedouro(Comedouro* comedouro, int tipo_alimento, float capacidade_max, float qtd_alimento_disp);
+Estoque* inicializa_estoque(float carne_disp, float vegetais_disp, float frutas_disp);
+Veterinario* cria_veterinarios(int tamanho);
+void inicializa_veterinario(Veterinario* vet, int num_comedouros_resp, const int* comedouros_resp);
+Fornecedor* inicializa_fornecedor(float carne_entregue, float vegetais_entregues, float frutas_entregues);
+Zoologico* cria_zoologico(int num_leoes, int num_suricatos, int num_avestruses, float capacidade_max_comedouro, float carne_inicial, float vegetais_iniciais, float frutas_iniciais, int vet_padrao);
+void print_zoo(Zoologico* zoo);
+void free_zoo(Zoologico* zoo);
 
 #endif //ZOOSIM_DATA_H

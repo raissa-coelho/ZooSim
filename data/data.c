@@ -31,7 +31,7 @@ Animal* criar_animais(int tipo, int quantidade) {
                 return NULL;
         }
 
-        animais[i].id = i + 1;
+        animais[i].id = 0;
         animais[i].vezes_comida = 0;
     }
 
@@ -122,7 +122,7 @@ Fornecedor* inicializa_fornecedor(float carne_entregue, float vegetais_entregues
     return fornecedor;
 }
 
-Zoologico* cria_zoologico(int num_leoes, int num_suricatos, int num_avestruses, int qtd_comedouros, float capacidade_max_comedouro, float carne_inicial, float vegetais_iniciais, float frutas_iniciais, int num_veterinarios) {
+Zoologico* cria_zoologico(int num_leoes, int num_suricatos, int num_avestruses, float capacidade_max_comedouro, float carne_inicial, float vegetais_iniciais, float frutas_iniciais, int vet_padrao) {
     Zoologico *zoo = NULL;
 
     zoo = (Zoologico*) malloc(sizeof (Zoologico));
@@ -146,12 +146,15 @@ Zoologico* cria_zoologico(int num_leoes, int num_suricatos, int num_avestruses, 
     // Concatena os animais criados em uma única lista de animais
     for (int i = 0; i < num_leoes; i++) {
         zoo->animais[i] = leoes[i];
+        zoo->animais[i].id = i;
     }
     for (int i = 0; i < num_suricatos; i++) {
         zoo->animais[num_leoes + i] = suricatos[i];
+        zoo->animais[num_leoes + i].id = num_leoes + i;
     }
     for (int i = 0; i < num_avestruses; i++) {
         zoo->animais[num_leoes + num_suricatos + i] = avestruzes[i];
+        zoo->animais[num_leoes + num_suricatos + i].id = num_leoes + num_suricatos + i;
     }
 
     free(leoes);
@@ -159,13 +162,13 @@ Zoologico* cria_zoologico(int num_leoes, int num_suricatos, int num_avestruses, 
     free(avestruzes);
 
     // Inicializa os comedouros
-    zoo->num_comedouros = qtd_comedouros;
-    zoo->comedouros = cria_comedouro(qtd_comedouros);
+    zoo->num_comedouros = 3;
+    zoo->comedouros = cria_comedouro(zoo->num_comedouros);
     if (zoo->comedouros == NULL) {
         fprintf(stderr, "Erro: falha na alocacao de memoria para os comedouros\n");
         exit(1);
     }
-    for (int i = 0; i < qtd_comedouros; i++) {
+    for (int i = 0; i < zoo->num_comedouros; i++) {
         inicializa_comedouro(&(zoo->comedouros[i]), 0, capacidade_max_comedouro, 0.0f);
     }
 
@@ -178,13 +181,37 @@ Zoologico* cria_zoologico(int num_leoes, int num_suricatos, int num_avestruses, 
     }
 
     // Inicializa os veterinarios
+    int num_veterinarios = 0;
+
+    if(vet_padrao){
+        num_veterinarios = 2;
+    }else{
+        num_veterinarios = 3;
+    }
+
     Veterinario* veterinarios = cria_veterinarios(num_veterinarios);
     if (veterinarios == NULL) {
         fprintf(stderr, "Erro: falha na alocacao de memoria\n");
         exit(1);
     }
-    zoo->veterinarios = veterinarios;
+
     zoo->num_veterinarios = num_veterinarios;
+
+    if(vet_padrao){
+        int temp[2] = {0, 2};
+        inicializa_veterinario(&veterinarios[0], 2, temp);
+        int temp2[1] = {1};
+        inicializa_veterinario(&veterinarios[1], 1, temp2);
+    }else{
+        int temp[1] = {0};
+        inicializa_veterinario(&veterinarios[0], 1, temp);
+        int temp2[1] = {1};
+        inicializa_veterinario(&veterinarios[1], 1, temp2);
+        int temp3[1] = {2};
+        inicializa_veterinario(&veterinarios[2], 1, temp3);
+    }
+
+    zoo->veterinarios = veterinarios;
 
     // Inicializa o fornecedor
     Fornecedor* fornecedor = inicializa_fornecedor(0, 0, 0);
@@ -222,4 +249,61 @@ void free_zoo(Zoologico* zoo) {
 
     // Free memory for the estoque
     free(zoo->estoque);
+}
+
+void print_zoo(Zoologico* zoo) {
+    printf("=== Zoologico ===\n");
+
+    // Imprime informações dos animais
+    printf("Animais:\n");
+    for (int i = 0; i < zoo->num_animais; i++) {
+        Animal animal = zoo->animais[i];
+        printf(" - ID: %d | Tipo: ", animal.id);
+        switch (animal.tipo) {
+            case 1:
+                printf("Leao\n");
+                break;
+            case 2:
+                printf("Suricato\n");
+                break;
+            case 3:
+                printf("Avestruz\n");
+                break;
+            default:
+                printf("%d\n", animal.tipo);
+        }
+        printf(" | Quantidade de alimento: %.2f | Vezes alimentado: %d | Horas de sono: %d\n", animal.qtd_alimento, animal.vezes_comida, animal.horas_sono);
+    }
+
+    // Imprime informações dos comedouros
+    printf("Comedouros:\n");
+    for (int i = 0; i < zoo->num_comedouros; i++) {
+        Comedouro comedouro = zoo->comedouros[i];
+        printf(" - Tipo de alimento: %d | Quantidade de alimento disponivel: %.2f | Capacidade maxima: %.2f\n", comedouro.tipo_alimento, comedouro.qtd_alimento_disp, comedouro.capacidade_max);
+    }
+
+    // Imprime informações do estoque
+    printf("Estoque:\n");
+    printf(" - Carne disponivel: %.2f\n", zoo->estoque->carne_disp);
+    printf(" - Vegetais disponiveis: %.2f\n", zoo->estoque->vegetais_disp);
+    printf(" - Frutas disponiveis: %.2f\n", zoo->estoque->frutas_disp);
+    // outros tipos de alimentos
+
+    // Imprime informações dos veterinários
+    printf("Veterinarios:\n");
+    for (int i = 0; i < zoo->num_veterinarios; i++) {
+        Veterinario vet = zoo->veterinarios[i];
+        printf(" - ID: %d | Comedouros responsaveis:", vet.id);
+        for (int j = 0; j < vet.num_comedouros_resp; j++) {
+            printf(" %d", vet.comedouros_resp[j]);
+        }
+        printf("\n");
+    }
+
+    // Imprime informações do fornecedor
+    printf("Fornecedor:\n");
+    printf(" - Carne entregue: %.2f\n", zoo->fornecedor->carne_entregue);
+    printf(" - Vegetais entregues: %.2f\n", zoo->fornecedor->vegetais_entregues);
+    printf(" - Frutas entregues: %.2f\n", zoo->fornecedor->frutas_entregues);
+    // outros tipos de alimentos
 }
