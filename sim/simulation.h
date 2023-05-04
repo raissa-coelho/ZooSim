@@ -11,7 +11,7 @@ void alimentar_animal(Animal* animal, Comedouro* comedouro);
 void dormir_animal(Animal* animal);
 
 // Funções que simulam as rotinas diárias dos veterinários
-/* Substitua este comentário com codigo eventualmente */
+void* veterinario_thread(void* arg);
 
 // Função que coordena as atividades diárias do zoológico
 void* coordinator_thread(void* arg);
