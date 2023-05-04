@@ -119,6 +119,11 @@ Estoque* inicializa_estoque(float carne_disp, float vegetais_disp, float frutas_
     estoque->carne_disp = carne_disp;
     estoque->vegetais_disp = vegetais_disp;
     estoque->frutas_disp = frutas_disp;
+    if (pthread_mutex_init(&estoque->mutex, NULL) != 0) {
+        fprintf(stderr, "Erro: falha na inicializacao do mutex do estoque\n");
+        free(estoque);
+        return NULL;
+    }
     // inicializa outros tipos de alimentos
 
     return estoque;

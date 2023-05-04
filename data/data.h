@@ -25,6 +25,7 @@ typedef struct Estoque {
     float carne_disp;
     float vegetais_disp;
     float frutas_disp;
+    pthread_mutex_t mutex;
     // outros tipos de alimentos
 } Estoque;
 

@@ -3,9 +3,15 @@
 // Variável global que indica se a simulação deve continuar ou não
 volatile sig_atomic_t should_stop = 0;
 
+volatile sig_atomic_t should_fill_stock = 0;
+
 // Função que trata o sinal de encerramento
 void handle_signal(int signum) {
     should_stop = 1;
+}
+
+void handle_fill_stock_signal(int signum) {
+    should_fill_stock = 1;
 }
 
 // Variável global que representa o mutex para controle de acesso aos animais
@@ -74,6 +80,123 @@ void* animal_thread(void* arg, Comedouro* comedouro) {
 
     // A função foi encerrada por um sinal externo
     printf("Animal %d encerrado por sinal externo.\n", animal->id);
+
+    // Não é necessário retornar nenhum valor, já que a função foi interrompida por um sinal externo
+    return NULL;
+}
+int verifica_comedouros(const int *arr, int count, Comedouro *comedouros){
+    int i;
+    for (i = 0; i < count; i++) {
+        int pos = arr[i];
+        Comedouro *com = &comedouros[pos];
+        pthread_mutex_lock(&com->mutex);
+        if (com->qtd_alimento_disp < com->capacidade_max) {
+            pthread_mutex_unlock(&com->mutex);
+            return pos;
+        }
+        pthread_mutex_unlock(&com->mutex);
+    }
+    return -1;
+}
+
+void* fornecedor_thread(Fornecedor *fornecedor, Estoque *estoque) {
+    while(!should_stop) {
+        if(should_fill_stock) {
+            printf("Fornecedor preenchendo estoque...\n");
+
+            // Bloquear o estoque para evitar acesso concorrente
+            pthread_mutex_lock(&estoque->mutex);
+
+            float carne = 30 - estoque->carne_disp;
+            float vegetais = 30 - estoque->vegetais_disp;
+            float frutas = 30 - estoque->frutas_disp;
+
+            estoque->carne_disp += carne;
+            estoque->vegetais_disp += vegetais;
+            estoque->frutas_disp += frutas;
+            // preencher outros tipos de alimentos
+            fornecedor->carne_entregue += carne;
+            fornecedor->vegetais_entregues += vegetais;
+            fornecedor->frutas_entregues += frutas;
+            // entregar outros tipos de alimentos
+
+            // Desbloquear o estoque após preenchido
+            pthread_mutex_unlock(&estoque->mutex);
+
+            printf("Fornecedor entregou 30 unidades de cada alimento.\n");
+
+            should_fill_stock = 0;
+        }
+
+        sleep(1); // 1s
+    }
+
+    printf("Fornecedor encerrado.\n");
+
+    return NULL;
+}
+
+void* preenche_comedouro(Comedouro *comedouro, Estoque *estoque) {
+    pthread_mutex_lock(&comedouro->mutex);
+    pthread_mutex_lock(&estoque->mutex);
+
+    switch (comedouro->tipo_alimento) {
+        case 1: // Carne
+            if (estoque->carne_disp >= comedouro->capacidade_max - comedouro->qtd_alimento_disp) {
+                estoque->carne_disp -= (comedouro->capacidade_max - comedouro->qtd_alimento_disp);
+                comedouro->qtd_alimento_disp = comedouro->capacidade_max;
+                printf("Comedouro %d preenchido com carne.\n", comedouro->tipo_alimento);
+            } else {
+                should_fill_stock = 1;
+            }
+            break;
+        case 2: // Vegetais
+            if (estoque->vegetais_disp >= comedouro->capacidade_max - comedouro->qtd_alimento_disp) {
+                estoque->vegetais_disp -= (comedouro->capacidade_max - comedouro->qtd_alimento_disp);
+                comedouro->qtd_alimento_disp = comedouro->capacidade_max;
+                printf("Comedouro %d preenchido com vegetais.\n", comedouro->tipo_alimento);
+            } else {
+                should_fill_stock = 1;
+            }
+            break;
+        case 3: // Frutas
+            if (estoque->frutas_disp >= comedouro->capacidade_max - comedouro->qtd_alimento_disp) {
+                estoque->frutas_disp -= (comedouro->capacidade_max - comedouro->qtd_alimento_disp);
+                comedouro->qtd_alimento_disp = comedouro->capacidade_max;
+                printf("Comedouro %d preenchido com frutas.\n", comedouro->tipo_alimento);
+            } else {
+                should_fill_stock = 1;
+            }
+            break;
+            // outros tipos de alimentos
+    }
+
+    pthread_mutex_unlock(&estoque->mutex);
+    pthread_mutex_unlock(&comedouro->mutex);
+
+    return NULL;
+}
+void* veterinario_thread(void* arg, int vet_id){
+    Zoologico *zoo = (Zoologico*) arg;
+    // Conversão do argumento genérico para um ponteiro para Veterinario
+    Veterinario *vet = &zoo->veterinarios[vet_id];
+    Comedouro *comedouros = zoo->comedouros;
+
+    // Loop para simular o ciclo do Veterinario, que será interrompido caso a variável should_stop seja alterada
+    while (!should_stop) {
+        // Verifica se tem algum comedouro vazio
+        int pos = verifica_comedouros(vet->comedouros_resp, vet->num_comedouros_resp, comedouros);
+        if(pos != -1){
+            //Tenta solicitar o preenchimento do comedouro
+            preenche_comedouro(&comedouros[pos], zoo->estoque);
+        }
+
+        // Bloqueia a thread por 1 segundo antes de reiniciar o ciclo
+        sleep(1);
+    }
+
+    // A função foi encerrada por um sinal externo
+    printf("Veterinario %d encerrado por sinal externo.\n", vet->id);
 
     // Não é necessário retornar nenhum valor, já que a função foi interrompida por um sinal externo
     return NULL;
