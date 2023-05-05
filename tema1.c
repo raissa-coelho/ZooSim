@@ -42,7 +42,7 @@ int main(int argc, char *argv[]){
 
         Zoologico *zoo = cria_zoologico(leoes, suricatos, avestruzes, comedouro_capacidade, 30, 30, 30, veterinario_padrao);
         simular_zoologico(zoo, 4);
-        //print_zoo(zoo);
+        print_zoo(zoo);
         //free_zoo(zoo);
         return 0;
     }

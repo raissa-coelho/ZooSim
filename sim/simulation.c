@@ -28,13 +28,13 @@ pthread_mutex_t mutex_animais = PTHREAD_MUTEX_INITIALIZER;
 
 void exibir_animal(Animal* animal) {
     // Lock no mutex antes de acessar o animal
-    pthread_mutex_lock(&mutex_animais);
+    //pthread_mutex_lock(&mutex_animais);
 
     // Impressão das informações do animal
     printf("Animal %d se exibiu\n", animal->id);
 
     // Unlock no mutex após acessar o animal
-    pthread_mutex_unlock(&mutex_animais);
+    //pthread_mutex_unlock(&mutex_animais);
 }
 
 void alimentar_animal(Animal* animal, Comedouro* comedouro) {
@@ -50,8 +50,8 @@ void alimentar_animal(Animal* animal, Comedouro* comedouro) {
         // Incrementa o contador de vezes que o animal comeu
         animal->vezes_comida++;
 
-        printf("Animal %d foi alimentado. Restam %.1f unidades de alimento no comedouro.\n",
-               animal->id, comedouro->qtd_alimento_disp);
+        printf("Animal %d foi alimentado. Restam %.1f unidades de %d no comedouro.\n",
+               animal->id, comedouro->qtd_alimento_disp, comedouro->tipo_alimento);
     }
 
     // Libera o acesso ao comedouro para outros animais
@@ -60,7 +60,7 @@ void alimentar_animal(Animal* animal, Comedouro* comedouro) {
 
 void dormir_animal(Animal* animal) {
     printf("Animal %d vai dormir por %d horas\n", animal->id, animal->horas_sono);
-    sleep(animal->horas_sono * 3600); // converte horas para segundos
+    sleep(animal->horas_sono); // converte horas para segundos
     printf("Animal %d acordou\n", animal->id);
 }
 
@@ -99,7 +99,7 @@ int verifica_comedouros(const int *arr, int count, Comedouro *comedouros){
         int pos = arr[i];
         Comedouro *com = &comedouros[pos];
         pthread_mutex_lock(&com->mutex);
-        if (com->qtd_alimento_disp < com->capacidade_max) {
+        if (com->qtd_alimento_disp == 0) {
             pthread_mutex_unlock(&com->mutex);
             return pos;
         }
@@ -138,7 +138,7 @@ void *fornecedor_thread(void* arg) {
             // Desbloquear o estoque após preenchido
             pthread_mutex_unlock(&estoque->mutex);
 
-            printf("Fornecedor entregou 30 unidades de cada alimento.\n");
+            printf("Fornecedor preencheu os estoques de alimento.\n");
 
             should_fill_stock = 0;
         }
@@ -156,7 +156,7 @@ void* preenche_comedouro(Comedouro *comedouro, Estoque *estoque) {
     pthread_mutex_lock(&estoque->mutex);
 
     switch (comedouro->tipo_alimento) {
-        case 1: // Carne
+        case 0: // Carne
             if (estoque->carne_disp >= comedouro->capacidade_max - comedouro->qtd_alimento_disp) {
                 estoque->carne_disp -= (comedouro->capacidade_max - comedouro->qtd_alimento_disp);
                 comedouro->qtd_alimento_disp = comedouro->capacidade_max;
@@ -165,7 +165,7 @@ void* preenche_comedouro(Comedouro *comedouro, Estoque *estoque) {
                 should_fill_stock = 1;
             }
             break;
-        case 2: // Vegetais
+        case 1: // Vegetais
             if (estoque->vegetais_disp >= comedouro->capacidade_max - comedouro->qtd_alimento_disp) {
                 estoque->vegetais_disp -= (comedouro->capacidade_max - comedouro->qtd_alimento_disp);
                 comedouro->qtd_alimento_disp = comedouro->capacidade_max;
@@ -174,7 +174,7 @@ void* preenche_comedouro(Comedouro *comedouro, Estoque *estoque) {
                 should_fill_stock = 1;
             }
             break;
-        case 3: // Frutas
+        case 2: // Frutas
             if (estoque->frutas_disp >= comedouro->capacidade_max - comedouro->qtd_alimento_disp) {
                 estoque->frutas_disp -= (comedouro->capacidade_max - comedouro->qtd_alimento_disp);
                 comedouro->qtd_alimento_disp = comedouro->capacidade_max;
@@ -203,6 +203,9 @@ void *veterinario_thread(void* arg){
 
     // Loop para simular o ciclo do Veterinario, que será interrompido caso a variável should_stop seja alterada
     while (!should_stop) {
+        if(zoo->estoque->frutas_disp < 2.9){
+            should_fill_stock = 1;
+        }
         // Verifica se tem algum comedouro vazio
         int pos = verifica_comedouros(vet->comedouros_resp, vet->num_comedouros_resp, comedouros);
         if(pos != -1){
@@ -246,11 +249,11 @@ void simular_zoologico(Zoologico* zoologico, int num_dias) {
     // cria as threads dos animais
     for (int i = 0; i < zoologico->num_animais; i++) {
 
-        animalArgs[i].comedouro = &zoologico->comedouros[zoologico->animais[i].tipo];
+        animalArgs[i].comedouro = &zoologico->comedouros[zoologico->animais[i].tipo - 1];
         animalArgs[i].animal = &zoologico->animais[i];
 
         pthread_create(&animal_threads[i], NULL, animal_thread, (void *)&animalArgs[i]);
-        printf("Thread %lu: animal % d, criado\n", animal_threads[i], animalArgs[i].animal->id);
+        printf("Thread %lu: animal %d, criado\n", animal_threads[i], animalArgs[i].animal->id);
     }
 
     // cria as threads dos veterinários
@@ -264,9 +267,11 @@ void simular_zoologico(Zoologico* zoologico, int num_dias) {
 
     should_start = 1;
 
-    sleep(num_dias*24*3600);
+    sleep(24 * num_dias);
 
     should_stop = 1;
+
+    printf("=====| Tempo de execução encerrado, encerrando threads...\n");
 
     // aguarda o término das threads dos animais
     for (int i = 0; i < zoologico->num_animais; i++) {

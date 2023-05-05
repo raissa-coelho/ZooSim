@@ -217,7 +217,7 @@ Zoologico* cria_zoologico(int num_leoes, int num_suricatos, int num_avestruses, 
         exit(1);
     }
     for (int i = 0; i < zoo->num_comedouros; i++) {
-        inicializa_comedouro(&(zoo->comedouros[i]), 0, capacidade_max_comedouro, 30.0f);
+        inicializa_comedouro(&(zoo->comedouros[i]), i, capacidade_max_comedouro, 30.0f);
     }
 
     // Inicializa o estoque
