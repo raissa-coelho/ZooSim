@@ -17,6 +17,7 @@ int main(int argc, char *argv[]){
     int comedouro_capacidade = 30;
     int veterinario_padrao = 1;
     int execucao_padrao = 1;
+    int dias = 1;
     for(int i = 0; i < argc; i++){
         printf("%s ", argv[i]);
     }
@@ -27,7 +28,7 @@ int main(int argc, char *argv[]){
     }else {
         parseInput(argv[1], "%i", &execucao_padrao);
         if (execucao_padrao != 1) {
-            if (argc != 7) {
+            if (argc != 8) {
                 fprintf(stderr, "Entrada invalida");
                 exit(1);
             } else {
@@ -36,11 +37,12 @@ int main(int argc, char *argv[]){
                 parseInput(argv[4], "%i", &avestruzes);
                 parseInput(argv[5], "%i", &comedouro_capacidade);
                 parseInput(argv[6], "%i", &veterinario_padrao);
+                parseInput(argv[7], "%i", &dias);
             }
         }
 
         Zoologico *zoo = cria_zoologico(leoes, suricatos, avestruzes, comedouro_capacidade, 30, 30, 30, veterinario_padrao);
-        simular_zoologico(zoo, 4);
+        simular_zoologico(zoo, dias);
         print_zoo(zoo);
         //free_zoo(zoo);
         return 0;
