@@ -7,7 +7,7 @@ Use CMake
 >
 > cmake --build .
 > 
-> ./ZooSim [execute] [num_lions] [num_meerkat] [num_ostrich] [mun_total_food] [num_vet]
+> ./ZooSim [execute] [num_lions] [num_meerkat] [num_ostrich] [mun_total_food] [num_vet] [num_dias]
 
 If execute = 1, the code uses the default numbers.
 > ./ZooSim 1
