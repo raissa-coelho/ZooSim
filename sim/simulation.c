@@ -203,9 +203,6 @@ void *veterinario_thread(void* arg){
 
     // Loop para simular o ciclo do Veterinario, que será interrompido caso a variável should_stop seja alterada
     while (!should_stop) {
-        if(zoo->estoque->frutas_disp < 2.9){
-            should_fill_stock = 1;
-        }
         // Verifica se tem algum comedouro vazio
         int pos = verifica_comedouros(vet->comedouros_resp, vet->num_comedouros_resp, comedouros);
         if(pos != -1){
