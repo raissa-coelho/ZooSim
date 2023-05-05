@@ -1,9 +1,18 @@
 #include "simulation.h"
 
 // Variável global que indica se a simulação deve continuar ou não
-volatile sig_atomic_t should_stop = 0;
+volatile int should_stop = 0;
 
-volatile sig_atomic_t should_fill_stock = 0;
+// Variável global que indica se o estoque deve ser preenchido ou não
+volatile int should_fill_stock = 0;
+
+// Variável global que indica se o estoque deve ser preenchido ou não
+volatile int should_start = 0;
+
+// Função que trata o sinal de encerramento
+void handle_start(int signum) {
+    should_start = 1;
+}
 
 // Função que trata o sinal de encerramento
 void handle_signal(int signum) {
@@ -22,11 +31,7 @@ void exibir_animal(Animal* animal) {
     pthread_mutex_lock(&mutex_animais);
 
     // Impressão das informações do animal
-    printf("Animal %d:\n", animal->id);
-    printf("Tipo: %d\n", animal->tipo);
-    printf("Quantidade de alimento ingerido: %.2f\n", animal->qtd_alimento);
-    printf("Número de vezes alimentado: %d\n", animal->vezes_comida);
-    printf("Horas de sono: %d\n", animal->horas_sono);
+    printf("Animal %d se exibiu\n", animal->id);
 
     // Unlock no mutex após acessar o animal
     pthread_mutex_unlock(&mutex_animais);
@@ -37,7 +42,7 @@ void alimentar_animal(Animal* animal, Comedouro* comedouro) {
     pthread_mutex_lock(&(comedouro->mutex));
 
     if (comedouro->qtd_alimento_disp < animal->qtd_alimento) {
-        printf("Comedouro vazio! Animal não pôde ser alimentado.\n");
+        printf("Comedouro vazio! Animal nao pode ser alimentado.\n");
     } else {
         // Remove a quantidade de alimento consumida pelo animal do comedouro
         comedouro->qtd_alimento_disp -= animal->qtd_alimento;
@@ -59,9 +64,13 @@ void dormir_animal(Animal* animal) {
     printf("Animal %d acordou\n", animal->id);
 }
 
-void* animal_thread(void* arg, Comedouro* comedouro) {
+void* animal_thread(void* arg) {
+    AnimalArgs *args = arg;
     // Conversão do argumento genérico para um ponteiro para Animal
-    Animal* animal = (Animal*) arg;
+    Animal* animal = args->animal;
+    Comedouro* comedouro = args->comedouro;
+
+    while(!should_start){}
 
     // Loop para simular o ciclo diário do animal, que será interrompido caso a variável should_stop seja alterada
     while (!should_stop) {
@@ -99,7 +108,13 @@ int verifica_comedouros(const int *arr, int count, Comedouro *comedouros){
     return -1;
 }
 
-void* fornecedor_thread(Fornecedor *fornecedor, Estoque *estoque) {
+void *fornecedor_thread(void* arg) {
+    FornecedorArgs *fornecedorArgs = arg;
+    Estoque *estoque = fornecedorArgs->estoque;
+    Fornecedor *fornecedor = fornecedorArgs->fornecedor;
+
+    while(!should_start){}
+
     while(!should_stop) {
         if(should_fill_stock) {
             printf("Fornecedor preenchendo estoque...\n");
@@ -176,11 +191,15 @@ void* preenche_comedouro(Comedouro *comedouro, Estoque *estoque) {
 
     return NULL;
 }
-void* veterinario_thread(void* arg, int vet_id){
-    Zoologico *zoo = (Zoologico*) arg;
+void *veterinario_thread(void* arg){
+    VeterinarioArgs *veterinarioArgs = (VeterinarioArgs*) arg;
+
+    Zoologico *zoo = veterinarioArgs->zoologico;
     // Conversão do argumento genérico para um ponteiro para Veterinario
-    Veterinario *vet = &zoo->veterinarios[vet_id];
+    Veterinario *vet = &zoo->veterinarios[veterinarioArgs->vet_id];
     Comedouro *comedouros = zoo->comedouros;
+
+    while(!should_start){}
 
     // Loop para simular o ciclo do Veterinario, que será interrompido caso a variável should_stop seja alterada
     while (!should_stop) {
@@ -200,4 +219,65 @@ void* veterinario_thread(void* arg, int vet_id){
 
     // Não é necessário retornar nenhum valor, já que a função foi interrompida por um sinal externo
     return NULL;
+}
+
+
+void simular_zoologico(Zoologico* zoologico, int num_dias) {
+
+
+    pthread_t animal_threads[zoologico->num_animais];
+    pthread_t vet_threads[zoologico->num_veterinarios];
+    pthread_t fornecedor_threads;
+
+    FornecedorArgs *fornecedorArgs = (FornecedorArgs*) malloc(sizeof(FornecedorArgs));
+    fornecedorArgs->fornecedor = zoologico->fornecedor;
+    fornecedorArgs->estoque = zoologico->estoque;
+
+    VeterinarioArgs *veterinarioArgs = (VeterinarioArgs*) malloc(sizeof(VeterinarioArgs) * zoologico->num_veterinarios);
+
+    AnimalArgs *animalArgs = (AnimalArgs*) malloc(sizeof(AnimalArgs) * zoologico->num_animais);
+
+    printf("Inicializando threads...\n");
+
+    // cria a thread do fornecedor
+    pthread_create(&fornecedor_threads, NULL, fornecedor_thread, (void *)fornecedorArgs);
+    printf("Thread %lu: Fornecedor criado\n", fornecedor_threads);
+
+    // cria as threads dos animais
+    for (int i = 0; i < zoologico->num_animais; i++) {
+
+        animalArgs[i].comedouro = &zoologico->comedouros[zoologico->animais[i].tipo];
+        animalArgs[i].animal = &zoologico->animais[i];
+
+        pthread_create(&animal_threads[i], NULL, animal_thread, (void *)&animalArgs[i]);
+        printf("Thread %lu: animal % d, criado\n", animal_threads[i], animalArgs[i].animal->id);
+    }
+
+    // cria as threads dos veterinários
+    for (int i = 0; i < zoologico->num_veterinarios; i++) {
+        veterinarioArgs[i].zoologico = zoologico;
+        veterinarioArgs[i].vet_id = i;
+
+        pthread_create(&vet_threads[i], NULL, veterinario_thread, (void *)&veterinarioArgs[i]);
+        printf("Thread %lu: veterinario % d, criado\n", vet_threads[i], veterinarioArgs[i].vet_id);
+    }
+
+    should_start = 1;
+
+    sleep(num_dias*24*3600);
+
+    should_stop = 1;
+
+    // aguarda o término das threads dos animais
+    for (int i = 0; i < zoologico->num_animais; i++) {
+        pthread_join(animal_threads[i], NULL);
+    }
+
+    // aguarda o término das threads dos veterinários
+    for (int i = 0; i < zoologico->num_veterinarios; i++) {
+        pthread_join(vet_threads[i], NULL);
+    }
+
+    // encerra a thread do fornecedor
+    pthread_join(fornecedor_threads, NULL);
 }

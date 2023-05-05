@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "data/data.h"
+#include "sim/simulation.h"
 #include "print/print.h"
 
 int parseInput(char *arg, char* type,  void* target){
@@ -40,7 +41,8 @@ int main(int argc, char *argv[]){
         }
 
         Zoologico *zoo = cria_zoologico(leoes, suricatos, avestruzes, comedouro_capacidade, 30, 30, 30, veterinario_padrao);
-        print_zoo(zoo);
+        simular_zoologico(zoo, 4);
+        //print_zoo(zoo);
         //free_zoo(zoo);
         return 0;
     }
