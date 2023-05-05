@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include "data/data.h"
 #include "sim/simulation.h"
-#include "print/print.h"
 
 int parseInput(char *arg, char* type,  void* target){
     int retVal = sscanf (arg, type, target) != 1;
